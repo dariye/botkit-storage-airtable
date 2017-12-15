@@ -1,7 +1,7 @@
 {
   "name": "botkit-storage-airtable",
   "version": "1.0.0",
-  "description": "Firebase driver for Botkit",
+  "description": "Airtable driver for Botkit",
   "main": "index.js",
   "scripts": {
     "pretest": "lint-staged",
@@ -30,8 +30,7 @@
   },
   "homepage": "https://github.com/pauldariye/botkit-storage-airtable#readme",
   "dependencies": {
-    "airtable": "^0.5.1",
-    "firebase": "^2.3.2"
+    "airtable": "^0.5.1"
   },
   "devDependencies": {
     "babel-cli": "^6.26.0",
@@ -46,6 +45,7 @@
     "proxyquire": "^1.7.3",
     "should": "^8.0.2",
     "should-sinon": "0.0.3",
-    "sinon": "^1.17.2"
+    "sinon": "^1.17.2",
+    "unit.js": "^2.0.0"
   }
 }

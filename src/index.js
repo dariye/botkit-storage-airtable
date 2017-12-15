@@ -1,93 +1,168 @@
-var Firebase = require('firebase');
+const Airtable = require('airtable')
 
 /**
- * The Botkit firebase driver
- *
- * @param {Object} config This must contain a `firebase_uri` property
- * @returns {{teams: {get, save, all}, channels: {get, save, all}, users: {get, save, all}}}
+ * The Botkit airtable
+ * @param {Object} config - Contains `apiKey` and `base` property
+ * @returns {{
+ *    bots: { find, create, update, destroy, all },
+ *    users: { find, create, update, destroy, all },
+ *    teams: { find, create, update, destroy, all },
+ *    companies: { find, create, update, destroy, all },
+ *    memberships: { find, create, update, destroy, all },
+ *    checkins: { find, create, update, destroy, all },
+ *    sprints: { find, create, update, destroy, all }
+ *  }}
  */
 module.exports = function(config) {
+  if (!config) throw new Error('airtable config is required.')
+  if (!config.apiKey) throw new Error('airtable apiKey is required.')
+  if (!config.base) throw new Error('airtable root base is required.')
 
-    if (!config || !config.firebase_uri) {
-        throw new Error('firebase_uri is required.');
+  const base = new Airtable({ apiKey: config.apiKey }).base(config.base),
+    botsBase = base('bots'),
+    usersBase = base('users')
+    teamsBase = base('teams'),
+    companiesBase = base('companies'),
+    membershipsBase = base('memberships'),
+    checkinsBase = base('checkins'),
+    sprintsBase = base('sprints');
+
+  return {
+    bots: {
+      find: find(botsBase),
+      create: create(botsBase),
+      update: update(botsBase),
+      destroy: destroy(botsBase),
+      all: all(botsBase)
+    },
+    users: {
+      find: find(usersBase),
+      create: create(usersBase),
+      update: update(usersBase),
+      destroy: destroy(usersBase),
+      all: all(usersBase)
+    },
+    teams: {
+      find: find(teamsBase),
+      create: create(teamsBase),
+      update: update(teamsBase),
+      destroy: destroy(teamsBase),
+      all: all(teamsBase)
+    },
+    companies: {
+      find: find(companiesBase),
+      create: create(companiesBase),
+      update: update(companiesBase),
+      destroy: destroy(companiesBase),
+      all: all(companiesBase)
+    },
+    memberships: {
+      find: find(membershipsBase),
+      create: create(membershipsBase),
+      update: update(memberships),
+      destroy: destroy(membershipsBase),
+      all: all(membershipsBase)
+    },
+    checkins: {
+      find: find(checkinsBase),
+      create: create(checkinsBase),
+      update: update(checkinsBase),
+      destroy: destroy(checkinsBase),
+      all: all(checkinsBase)
+    },
+    sprints: {
+      find: find(sprintsBase),
+      create: create(sprintsBase),
+      update: update(sprintsBase),
+      destroy: destroy(sprintsBase),
+      all: all(sprintsBase)
     }
-
-    var rootRef = new Firebase(config.firebase_uri),
-        teamsRef = rootRef.child('teams'),
-        usersRef = rootRef.child('users'),
-        channelsRef = rootRef.child('channels');
-
-    return {
-        teams: {
-            get: get(teamsRef),
-            save: save(teamsRef),
-            all: all(teamsRef)
-        },
-        channels: {
-            get: get(channelsRef),
-            save: save(channelsRef),
-            all: all(channelsRef)
-        },
-        users: {
-            get: get(usersRef),
-            save: save(usersRef),
-            all: all(usersRef)
-        }
-    };
+  };
 };
 
 /**
- * Given a firebase ref, will return a function that will get a single value by ID
+ * Given an airtable `table`, will return a function that will find a single record
  *
- * @param {Object} firebaseRef A reference to the firebase Object
- * @returns {Function} The get function
+ * @param {Object} `base` - an airtable table
+ * @returns {Function} - The find function
  */
-function get(firebaseRef) {
-    return function(id, cb) {
-        firebaseRef.child(id).once('value', success, cb);
-
-        function success(records) {
-            cb(null, records.val());
-        }
-    };
+function find(base) {
+  return (id, cb) => {
+    if (!id) throw new Error('find function requires an id')
+    return base.find(id, (err, record) => {
+      if (err) { console.log(err); return }
+      return record
+    })
+  };
 }
 
 /**
- * Given a firebase ref, will return a function that will save an object. The object must have an id property
+ * Given an airtable base, will return a function that will create a record
  *
- * @param {Object} firebaseRef A reference to the firebase Object
- * @returns {Function} The save function
+ * @param {Object} base - an airtable table
+ * @returns {Function} - The create function
  */
-function save(firebaseRef) {
-    return function(data, cb) {
-        var firebase_update = {};
-        firebase_update[data.id] = data;
-        firebaseRef.update(firebase_update, cb);
-    };
+function create(base) {
+  return (object, cb) => {
+    if (!object.id) throw new Error('create function requires a unique id for the object to be saved')
+    return base.create(object, (err, record) => {
+      if (err) { console.log(err); return }
+      return record
+    })
+  }
 }
 
 /**
- * Given a firebase ref, will return a function that will return all objects stored.
+ * Given an airtable base, will return a function that will update a record
  *
- * @param {Object} firebaseRef A reference to the firebase Object
+ * @param {Object} base - an airtable table
+ * @returns {Function} - The update function
+ */
+function update(base) {
+  return (id, object, cb) => {
+    if (!id) throw new Error('update function requires an id')
+    if (!object) throw new Error('update function require a payload object')
+    return base.update(id, object, (err, record) => {
+      if (err) { console.log(err); return }
+      return record
+    })
+  }
+}
+
+/**
+ * Given an airtable base, will return all objects
+ *
+ * @param {Object} base A reference to the airtable table
+ * @returns {Function} The destroy function
+ */
+function destroy(base) {
+  return (id, cb) => {
+    if (!id) throw new Error('destroy function requires an id')
+    return base.destroy(id, (err, record) => {
+      if (err) { console.log(err); return; }
+      return record
+    })
+  }
+}
+
+/**
+ * Given an airtable base, will return all objects
+ *
+ * @param {Object} base A reference to the airtable table
  * @returns {Function} The all function
  */
-function all(firebaseRef) {
-    return function(cb) {
-        firebaseRef.once('value', success, cb);
 
-        function success(records) {
-            var results = records.val();
-
-            if (!results) {
-                return cb(null, []);
-            }
-
-            var list = Object.keys(results).map(function(key) {
-                return results[key];
-            });
-
-            cb(null, list);
-        }
-    };
+function all(base) {
+  return (cb) => {
+    const records = []
+    return base.select({
+        maxRecords: 100
+    }).eachPage(function page (recs, fetchNextPage) {
+      records = [records, ...recs]
+      fetchNextPage()
+    }, function done (err) {
+      if (err) { console.log(err); return; }
+      return records
+    })
+  }
 }
