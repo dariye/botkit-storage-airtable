@@ -1,33 +1,48 @@
 {
-  "name": "botkit-storage-firebase",
+  "name": "botkit-storage-airtable",
   "version": "1.0.0",
   "description": "Firebase driver for Botkit",
   "main": "index.js",
   "scripts": {
-    "pretest": "jscs ./",
-    "test": "istanbul cover --report lcov --dir coverage/ _mocha ./tests --grep ./tests/*.js -- --colors"
+    "pretest": "lint-staged",
+    "test": "istanbul cover --report lcov --dir coverage/ _mocha ./tests --grep ./tests/*.js -- --colors",
+    "build": "babel src -d lib",
+    "precommit": "lint-staged"
+  },
+  "lint-staged": {
+    "*.{js,json,css,md}": [
+      "prettier --write",
+      "git add"
+    ]
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/howdyai/botkit-storage-firebase.git"
+    "url": "git+https://github.com/pauldariye/botkit-storage-airtable.git"
   },
   "keywords": [
     "botkit",
-    "firebase"
+    "airtable"
   ],
-  "author": "Cole Furfaro-Strode",
+  "author": "Paul Dariye",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/howdyai/botkit-storage-firebase/issues"
+    "url": "https://github.com/pauldariye/botkit-storage-airtable/issues"
   },
-  "homepage": "https://github.com/howdyai/botkit-storage-firebase#readme",
+  "homepage": "https://github.com/pauldariye/botkit-storage-airtable#readme",
   "dependencies": {
+    "airtable": "^0.5.1",
     "firebase": "^2.3.2"
   },
   "devDependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-preset-env": "^1.6.1",
+    "eslint-config-prettier": "^2.9.0",
+    "eslint-plugin-prettier": "^2.3.1",
+    "husky": "^0.14.3",
     "istanbul": "^0.4.1",
-    "jscs": "^2.8.0",
+    "lint-staged": "^6.0.0",
     "mocha": "^2.3.4",
+    "prettier": "^1.9.2",
     "proxyquire": "^1.7.3",
     "should": "^8.0.2",
     "should-sinon": "0.0.3",
