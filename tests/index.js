@@ -11,6 +11,7 @@ describe('Airtable', function () {
   beforeEach(function () {
 
     baseMock = {
+      configure: sinon.stub(),
       base: sinon.stub()
     }
 
@@ -80,8 +81,7 @@ describe('Airtable', function () {
         tables: ['tablu']
       }
       Storage(config)
-      airtableMock.should.be.calledWithNew // Check this
-      airtableMock.base.should.be.calledWith(config)
+      airtableMock.callCount.should.equal(1)
     })
   });
 

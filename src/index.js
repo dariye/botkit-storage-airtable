@@ -11,7 +11,7 @@ module.exports = function(config) {
   if (!config.tables) throw new Error('at least one airtable base table is required.')
   if (!(Array.isArray(config.tables) && Object.prototype.toString.call(config.tables) === '[object Array]')) throw new Error('tables must be an array.')
 
-  const tables = config.tables || ['bots', 'users', 'channels', 'teams']
+  const tables = config.tables || ['bots', 'users', 'channels', 'teams'] // Set defaults
   tables.forEach(function (tableName) {
     let isString = false
     isString = (tableName !== '') ? true : false
@@ -51,7 +51,7 @@ function getStorageObject(base) {
       if (!value) return cb(new Error('Requires a value to lookup'), {})
       if ((typeof field !== 'string')) return cb(new Error('Lookup field must be string'), {})
 
-      base.select({ filterByFormula: `${field}= '${value}'` }).firstPage(function (err, res) {
+      base.select({ filterByFormula: `${field} = '${value}'` }).firstPage(function (err, res) {
         cb(err, res ? res[0] : null )
       })
     },
