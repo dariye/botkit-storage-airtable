@@ -1,6 +1,7 @@
 # botkit-storage-airtable
 
-An Airtable storage module for Botkit.
+An Airtable storage module for Botkit. A lot of the code is reused from
+[botkit-storage-firebase](https://github.com/howdyai/botkit-storage-firebase).
 
 ## Usage
 
