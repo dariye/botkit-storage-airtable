@@ -11,7 +11,7 @@ module.exports = function(config) {
   if (!config.tables) throw new Error('at least one airtable base table is required.')
   if (!(Array.isArray(config.tables) && Object.prototype.toString.call(config.tables) === '[object Array]')) throw new Error('tables must be an array.')
 
-  const tables = config.tables || ['bots', 'users', 'teams']
+  const tables = config.tables || ['bots', 'users', 'channels', 'teams']
   tables.forEach(function (tableName) {
     let isString = false
     isString = (tableName !== '') ? true : false
@@ -63,7 +63,7 @@ function getStorageObject(base) {
         if (err) { console.log(err); return; }
         record = res[0]
       })
-      if (record) {
+      if (record && Object.keys(record).length !== 0 && record.constructor === Object) {
         base.update(record.getId(), updateObject, function (err, res) {
           if (err) { console.log(err); return; }
           cb(err, res ? res : null)
@@ -93,92 +93,5 @@ function getStorageObject(base) {
         cb(err, records ? records : null)
       })
     }
-  }
-}
-
-/**
- * Given an airtable `table`, will return a function that will find a single record
- *
- * @param {Object} `base` - an airtable table
- * @returns {Function} - The find function
- */
-function find(base) {
-  return (id, cb) => {
-    if (!id) throw new Error('find function requires an id')
-    return base.find(id, (err, record) => {
-      if (err) { console.log(err); return }
-      return record
-    })
-  };
-}
-
-/**
- * Given an airtable base, will return a function that will create a record
- *
- * @param {Object} base - an airtable table
- * @returns {Function} - The create function
- */
-function create(base) {
-  return (object, cb) => {
-    if (!object.id) throw new Error('create function requires a unique id for the object to be saved')
-    return base.create(object, (err, record) => {
-      if (err) { console.log(err); return }
-      return record
-    })
-  }
-}
-
-/**
- * Given an airtable base, will return a function that will update a record
- *
- * @param {Object} base - an airtable table
- * @returns {Function} - The update function
- */
-function update(base) {
-  return (id, object, cb) => {
-    if (!id) throw new Error('update function requires an id')
-    if (!object) throw new Error('update function require a payload object')
-    return base.update(id, object, (err, record) => {
-      if (err) { console.log(err); return }
-      return record
-    })
-  }
-}
-
-/**
- * Given an airtable base, will return all objects
- *
- * @param {Object} base A reference to the airtable table
- * @returns {Function} The destroy function
- */
-function destroy(base) {
-  return (id, cb) => {
-    if (!id) throw new Error('destroy function requires an id')
-    return base.destroy(id, (err, record) => {
-      if (err) { console.log(err); return; }
-      return record
-    })
-  }
-}
-
-/**
- * Given an airtable base, will return all objects
- *
- * @param {Object} base A reference to the airtable table
- * @returns {Function} The all function
- */
-
-function all(base) {
-  return (cb) => {
-    const records = []
-    return base.select({
-        maxRecords: 100
-    }).eachPage(function page (recs, fetchNextPage) {
-      records = [records, ...recs]
-      fetchNextPage()
-    }, function done (err) {
-      if (err) { console.log(err); return; }
-      return records
-    })
   }
 }
