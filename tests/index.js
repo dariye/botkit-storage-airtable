@@ -23,6 +23,7 @@ describe('Airtable', function () {
     }
 
     rootBaseMock = {
+      configure: sinon.stub(),
       base: sinon.stub().returns(tableMock)
     }
 
