@@ -2,7 +2,7 @@ const Airtable = require('airtable')
 /**
  * The Botkit airtable
  * @param {Object} config - Contains `apiKey` and `base` property
- * @returns {{ storage: {{ get, save, destroy, all }} }}
+ * @returns {{ storage: method: { get, save, destroy, all } }}
  */
 module.exports = function(config) {
   if (!config) throw new Error('airtable config is required.')
@@ -21,10 +21,9 @@ module.exports = function(config) {
     return
   })
 
-  const base = function () {
-    return new Airtable({ apiKey: config.apiKey }).base(config.base)
-  }
-  
+  Airtable.configure({ apiKey: config.apiKey })
+
+  const base = Airtable.base(config.base)
   const storage = {}
 
   tables.forEach(function (table, idx) {
@@ -43,20 +42,29 @@ module.exports = function(config) {
 function getStorageObject(base) {
   return {
     get: function (id, cb) {
-      base.find(id,  function (err, res) {
-        cb(err, res ? res : null )
+      base.select({ filterByFormula: `id = '${id}'` }).firstPage(function (err, res) {
+        cb(err, res ? res[0] : null )
+      })
+    },
+    lookup: function (field, value, cb) {
+      if (!field) return cb(new Error('Requires a field for lookup'), {})
+      if (!value) return cb(new Error('Requires a value to lookup'), {})
+      if ((typeof field !== 'string')) return cb(new Error('Lookup field must be string'), {})
+
+      base.select({ filterByFormula: `${field}= '${value}'` }).firstPage(function (err, res) {
+        cb(err, res ? res[0] : null )
       })
     },
     save: function (object, cb) {
       if (!object.id) return cb(new Error('The given object must have an id propery'), {})
       const { id, ...updateObject } = object
       let record = null
-      base.find(id, function (err, res) {
+      base.select({ filterByFormula: `id = '${id}'` }).firstPage(function (err, res) {
         if (err) { console.log(err); return; }
-        record = res
+        record = res[0]
       })
       if (record) {
-        base.update(id, updateObject, function (err, res) {
+        base.update(record.getId(), updateObject, function (err, res) {
           if (err) { console.log(err); return; }
           cb(err, res ? res : null)
         })
