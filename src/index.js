@@ -1,84 +1,92 @@
 const Airtable = require('airtable')
-
 /**
  * The Botkit airtable
  * @param {Object} config - Contains `apiKey` and `base` property
- * @returns {{
- *    bots: { find, create, update, destroy, all },
- *    users: { find, create, update, destroy, all },
- *    teams: { find, create, update, destroy, all },
- *    companies: { find, create, update, destroy, all },
- *    memberships: { find, create, update, destroy, all },
- *    checkins: { find, create, update, destroy, all },
- *    sprints: { find, create, update, destroy, all }
- *  }}
+ * @returns {{ storage: {{ get, save, destroy, all }} }}
  */
 module.exports = function(config) {
   if (!config) throw new Error('airtable config is required.')
   if (!config.apiKey) throw new Error('airtable apiKey is required.')
   if (!config.base) throw new Error('airtable root base is required.')
+  if (!config.tables) throw new Error('at least one airtable base table is required.')
+  if (!(Array.isArray(config.tables) && Object.prototype.toString.call(config.tables) === '[object Array]')) throw new Error('tables must be an array.')
 
-  const base = new Airtable({ apiKey: config.apiKey }).base(config.base),
-    botsBase = base('bots'),
-    usersBase = base('users')
-    teamsBase = base('teams'),
-    companiesBase = base('companies'),
-    membershipsBase = base('memberships'),
-    checkinsBase = base('checkins'),
-    sprintsBase = base('sprints');
+  const tables = config.tables || ['bots', 'users', 'teams']
+  tables.forEach(function (tableName) {
+    let isString = false
+    isString = (tableName !== '') ? true : false
+    isString = (typeof tableName === 'string') ? true : false
+    isString = (tableName.split('').every((char) => !isNaN(parseInt(char)))) ? true : false
+    if (isString) throw new Error ("airtable base table name must be a string.")
+    return
+  })
 
-  return {
-    bots: {
-      find: find(botsBase),
-      create: create(botsBase),
-      update: update(botsBase),
-      destroy: destroy(botsBase),
-      all: all(botsBase)
-    },
-    users: {
-      find: find(usersBase),
-      create: create(usersBase),
-      update: update(usersBase),
-      destroy: destroy(usersBase),
-      all: all(usersBase)
-    },
-    teams: {
-      find: find(teamsBase),
-      create: create(teamsBase),
-      update: update(teamsBase),
-      destroy: destroy(teamsBase),
-      all: all(teamsBase)
-    },
-    companies: {
-      find: find(companiesBase),
-      create: create(companiesBase),
-      update: update(companiesBase),
-      destroy: destroy(companiesBase),
-      all: all(companiesBase)
-    },
-    memberships: {
-      find: find(membershipsBase),
-      create: create(membershipsBase),
-      update: update(memberships),
-      destroy: destroy(membershipsBase),
-      all: all(membershipsBase)
-    },
-    checkins: {
-      find: find(checkinsBase),
-      create: create(checkinsBase),
-      update: update(checkinsBase),
-      destroy: destroy(checkinsBase),
-      all: all(checkinsBase)
-    },
-    sprints: {
-      find: find(sprintsBase),
-      create: create(sprintsBase),
-      update: update(sprintsBase),
-      destroy: destroy(sprintsBase),
-      all: all(sprintsBase)
-    }
-  };
+  const base = function () {
+    return new Airtable({ apiKey: config.apiKey }).base(config.base)
+  }
+  
+  const storage = {}
+
+  tables.forEach(function (table, idx) {
+    storage[table] = getStorageObject(base(table))
+  })
+
+  return storage
 };
+
+/**
+ * Function to generaate storage object for a given Airtable base
+ * @param {Object} base The Airtable table base
+ * @returns {{ get, save, destroy, all }}
+ */
+
+function getStorageObject(base) {
+  return {
+    get: function (id, cb) {
+      base.find(id,  function (err, res) {
+        cb(err, res ? res : null )
+      })
+    },
+    save: function (object, cb) {
+      if (!object.id) return cb(new Error('The given object must have an id propery'), {})
+      const { id, ...updateObject } = object
+      let record = null
+      base.find(id, function (err, res) {
+        if (err) { console.log(err); return; }
+        record = res
+      })
+      if (record) {
+        base.update(id, updateObject, function (err, res) {
+          if (err) { console.log(err); return; }
+          cb(err, res ? res : null)
+        })
+      } else {
+        base.create(object, function (err, res) {
+          if (err) { console.log(err); return; }
+          cb(err, res ? res : null)
+        })
+      }
+    },
+    destroy: function (id, cb) {
+      base.destroy(id, function (err, res) {
+        if (err) { console.log(err); return; }
+        cb(err, res ? res : null)
+      })
+    },
+    all: function (cb) {
+      let records = null
+      base.select({
+        maxRecords: 100,
+      }).eachPage(function page (res, fetchNextPage) {
+        records = [records, ...res]
+        fetchNextPage()
+      }, function done (err) {
+        if (err) { console.log(err); return }
+        cb(err, records ? records : null)
+      })
+    }
+  }
+}
 
 /**
  * Given an airtable `table`, will return a function that will find a single record
