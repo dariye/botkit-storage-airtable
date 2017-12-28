@@ -41,56 +41,65 @@ module.exports = function(config) {
 
 function getStorageObject(base) {
   return {
-    get: function (id, cb) {
-      base.select({ filterByFormula: `id = '${id}'` }).firstPage(function (err, res) {
-        cb(err, res ? res[0] : null )
-      })
-    },
-    lookup: function (field, value, cb) {
-      if (!field) return cb(new Error('Requires a field for lookup'), {})
-      if (!value) return cb(new Error('Requires a value to lookup'), {})
-      if ((typeof field !== 'string')) return cb(new Error('Lookup field must be string'), {})
-
-      base.select({ filterByFormula: `${field} = '${value}'` }).firstPage(function (err, res) {
-        cb(err, res ? res[0] : null )
-      })
-    },
-    save: function (object, cb) {
-      if (!object.id) return cb(new Error('The given object must have an id propery'), {})
-      const { id, ...updateObject } = object
-      let record = null
-      base.select({ filterByFormula: `id = '${id}'` }).firstPage(function (err, res) {
-        if (err) { console.log(err); return; }
-        record = res[0]
-      })
-      if (record && Object.keys(record).length !== 0 && record.constructor === Object) {
-        base.update(record.getId(), updateObject, function (err, res) {
-          if (err) { console.log(err); return; }
-          cb(err, res ? res : null)
+    get: (id) => {
+      return new Promise((resolve, reject) => {
+        base.select({ filterByFormula: `id = '${id}'` }).firstPage(function (err, records) {
+          if (err) return reject(err)
+          return resolve(records[0])
         })
-      } else {
-        base.create(object, function (err, res) {
-          if (err) { console.log(err); return; }
-          cb(err, res ? res : null)
-        })
-      }
-    },
-    destroy: function (id, cb) {
-      base.destroy(id, function (err, res) {
-        if (err) { console.log(err); return; }
-        cb(err, res ? res : null)
       })
     },
-    all: function (cb) {
-      let records = null
-      base.select({
-        maxRecords: 100,
-      }).eachPage(function page (res, fetchNextPage) {
-        records = [records, ...res]
-        fetchNextPage()
-      }, function done (err) {
-        if (err) { console.log(err); return }
-        cb(err, records ? records : null)
+    lookup: (field, value) => {
+      return new Promise((resolve, reject) => {
+        if (!field) return reject(new Error('Requires a field for lookup'))
+        if (!value) return reject(new Error('Requires a value to lookup'))
+        if ((typeof field !== 'string')) return reject(new Error('Lookup field must be string'))
+        base.select({ filterByFormula: `${field} = '${value}'` }).firstPage(function (err, records) {
+          if (err) return reject(err)
+          return resolve(records[0])
+        })
+      })
+    },
+    save: (object) => {
+      return new Promise((resolve, reject) => {
+        if (!object.id) return reject(new Error('The given object must have an id propery'))
+        const { id, ...updateObject } = object
+        base.select({ filterByFormula: `id = '${id}'` }).firstPage(function (err, records) {
+          if (err) return reject(err)
+          if (records[0]) {
+            base.update(records[0].getId(), updateObject, function (err, record) {
+              if (err) return reject(err)
+              return resolve(record)
+            })
+          } else {
+            base.create(object, function (err, record) {
+              if (err) return reject(err)
+              return resolve(record)
+            })
+          }
+        })
+      })
+    },
+    destroy: (id) => {
+      return new Promise((resolve, reject) => {
+        base.destroy(id, function (err, record) {
+          if (err) return reject(err)
+          return resolve(record)
+        })
+      })
+    },
+    all: () => {
+      return new Promise((resolve, reject) => {
+        let all = []
+        base.select({
+          maxRecords: 100,
+        }).eachPage(function page (records, fetchNextPage) {
+          all = [all, ...records]
+          fetchNextPage()
+        }, function done (err) {
+          if (err) return reject(err)
+          return resolve(all)
+        })
       })
     }
   }
